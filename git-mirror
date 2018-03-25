@@ -1,0 +1,169 @@
+#! /bin/bash
+
+opt_branch=()
+opt_source=
+opt_destination=
+
+
+die ()   { echo >&2 "FATAL: $*" ; exit 1 ; }
+warn ()  { echo >&2 "WARNING: $*" ; }
+error () { echo >&2 "ERROR: $*" ; script_fail=true;  }
+debug () { echo >&2 "DEBUG: $*" ; }
+
+
+show_help()
+{
+cat <<EOHELP >&2
+Usage: $0 OPTION
+
+Mirror one git repo into another one.  Suitable to be run by cron.
+
+Options:
+  --source URL          source git clone url (read-only is enough)
+  --destination URL     destination (read-write) git clone url
+  --branch SRC[:DEST[:OPTS]]   sync branch named SRC from --source repo into
+                        --destination repo, but change its name to DEST.
+                        Optional argument (by default master:master) is used,
+                        and multiple --branch options are allowed.  Implemented
+                        OPTS (colon separated) are 'merge' -- sync with merge
+                        commit is acceptable.
+  --cache-dir DIR       directory where to do the work (by default directory
+                        under /tmp directory is created).  Use this option to
+                        optimize subsequent calls to avoid full clones over
+                        again.
+EOHELP
+
+test -n "$1" && exit "$1"
+}
+
+
+opt_name ()
+{
+    opt_name_result=${1##--}
+    opt_name_result=${opt_name_result##-}
+    opt_name_result=${opt_name_result//-/_}
+    opt_name_result="opt_$opt_name_result"
+}
+
+
+opt_set ()
+{
+    opt_name "$1"
+    eval "$opt_name_result=\$2"
+}
+
+
+opt_append ()
+{
+    opt_name "$1"
+    eval "$opt_name_result+=( \"\$2\" )"
+}
+
+
+required_options="source destination"
+long_opts=source:,destination:,branch:,cache-dir:,help
+ARGS=$(getopt -o "" -l "$long_opts" -n "getopt" -- "$@") || exit 1
+eval set -- "$ARGS"
+
+while true; do
+    case $1 in
+    --help)
+        show_help 0
+        ;;
+    --destination|--source|--cache-dir)
+        opt_set "$1" "$2"
+        shift 2
+        ;;
+    --branch)
+        opt_append "$1" "$2"
+        shift 2
+        ;;
+    --) shift ; break ;;
+    *)  die "programmer mistake ($1)" ;;
+    esac
+done
+
+
+test -z "$opt_cache_dir" && {
+    opt_cache_dir=$(mktemp -d)
+    warn "using $opt_cache_dir"
+}
+
+script_fail=false
+for opt_required in $required_options; do
+    opt_name "--$opt_required"
+    eval 'test -z "$'"$opt_name_result"'"' \
+        && error "the option '--$opt_required' is required"
+done
+$script_fail && die "missing arguments"
+
+if test ${#opt_branch[@]} -eq 0; then
+    opt_branch=(master)
+fi
+
+for branch in "${opt_branch[@]}"; do
+    debug "branch spec: $branch"
+done
+
+assert_remote_url ()
+{
+    set_url=$(git config --get remote."$1".url)
+    test "$set_url" = "$2" \
+        || die "remote '$1' should have url = '$2', not '$set_url'"
+}
+
+if ! test -d "$opt_cache_dir"/.git; then
+    # Clone the destination directory repo, when needed.
+    git clone "$opt_destination" "$opt_cache_dir" \
+        || die "clone failed"
+fi
+
+cd "$opt_cache_dir" || die "can't go to $opt_cache_dir"
+
+assert_remote_url origin "$opt_destination"
+git fetch origin || die "can't fetch origin"
+
+remote_id=source_repo
+if git config --get remote."$remote_id".url &>/dev/null; then
+    assert_remote_url "$remote_id" "$opt_source"
+else
+    # No remote yet.
+    git remote add "$remote_id" "$opt_source"
+fi
+git fetch "$remote_id"
+
+
+# sync_branch FROM TO MERGE
+# -------------------------
+sync_branch ()
+{
+    # Create branch if not exists
+    git branch "$2" "origin/$2"
+    git checkout "$2"
+    git reset --hard "origin/$2" || return 1
+    if $3; then
+        git merge --no-edit "$remote_id/$1" || return 1
+    else
+        git merge --ff-only "$remote_id/$1" || return 1
+    fi
+    git push origin "$2" || return 1
+}
+
+for branch_spec in "${opt_branch[@]}"; do
+    IFS=: eval "set -- \$branch_spec"
+    test -z "$1" && error "misformated $branch_spec" && continue
+    merge=false
+    from_branch=$1 ; shift
+    to_branch=$1 ; shift
+    test -z "$to_branch" && to_branch=$from_branch
+
+    for arg
+    do
+        test "$arg" = merge && merge=: && continue
+        error "--branch $branch_spec -- '$arg' ignored"
+    done
+
+    sync_branch "$from_branch" "$to_branch" $merge \
+        || error "can't sync $from_branch => $to_branch"
+done
+! $script_fail
