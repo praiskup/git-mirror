@@ -3,6 +3,8 @@
 opt_branch=()
 opt_source=
 opt_destination=
+opt_user_name=
+opt_user_mail=
 
 
 die ()   { echo >&2 "FATAL: $*" ; exit 1 ; }
@@ -31,6 +33,8 @@ Options:
                         under /tmp directory is created).  Use this option to
                         optimize subsequent calls to avoid full clones over
                         again.
+  --user-name           author's name, e.g. John Doe (for git commits)
+  --user-mail           author's email (for git commits)
 EOHELP
 
 test -n "$1" && exit "$1"
@@ -62,6 +66,7 @@ opt_append ()
 
 required_options="source destination"
 long_opts=source:,destination:,branch:,cache-dir:,help
+long_opts+=,user-name:,user-mail:
 ARGS=$(getopt -o "" -l "$long_opts" -n "getopt" -- "$@") || exit 1
 eval set -- "$ARGS"
 
@@ -70,7 +75,7 @@ while true; do
     --help)
         show_help 0
         ;;
-    --destination|--source|--cache-dir)
+    --destination|--source|--cache-dir|--user-*)
         opt_set "$1" "$2"
         shift 2
         ;;
@@ -87,6 +92,16 @@ done
 test -z "$opt_cache_dir" && {
     opt_cache_dir=$(mktemp -d)
     warn "using $opt_cache_dir"
+}
+
+test -n "$opt_user_name" || {
+    opt_user_name=$(git config --global user.name)
+    test -n "$opt_user_name" || die "no global user.name, nor --user-name"
+}
+
+test -n "$opt_user_mail" || {
+    opt_user_mail=$(git config --global user.email)
+    test -n "$opt_user_mail" || die "no global user.email, nor --user-mail"
 }
 
 script_fail=false
@@ -142,7 +157,9 @@ sync_branch ()
     git checkout "$2"
     git reset --hard "origin/$2" || return 1
     if $3; then
-        git merge --no-edit "$remote_id/$1" || return 1
+        git -c user.name="$opt_user_name" \
+            -c user.email="$opt_user_mail" \
+            merge --no-edit "$remote_id/$1" || return 1
     else
         git merge --ff-only "$remote_id/$1" || return 1
     fi
