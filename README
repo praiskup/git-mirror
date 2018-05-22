@@ -1,8 +1,13 @@
 Mirror one git repo into another one
 ====================================
 
-Merge 'master' into 'master', and 'master' into 'ci' (destination 'ci' branch is
-OK to accept merge commits):
+Trivial script to sync branches from one remote git repo into another;  with
+intermediary cache directory (recycled for subsequent, e.g. cron, runs).
+
+For example, consider you want to synchronize 'source.git' repo with
+'destination.git'; and you want to sync 'master' -> 'master' and 'master' ->
+'ci', while the 'destination.git:ci' branch has some more commits -- not tracked
+in 'source.git:ci'.  Then you would do:
 
     $ git-mirror \
         --source https://example.com/source.git \
@@ -11,14 +16,14 @@ OK to accept merge commits):
         --branch master \
         --branch master:ci:merge
 
-Designed to be run by cron:
+Obviously, the 'destination.git:ci' will either contain "merge commits", or the
+synchronization fails if the 'ci' branches collide.
+
+The script is designed so it can be easily executed by cron, like:
 
     $ crontab -l
     0,30  *  *  *  *  git-mirror ... --cache-dir /tmp/cache-dir-1
     0,30  *  *  *  *  git-mirror ... --cache-dir /tmp/cache-dir-2
 
 
-For more info:
-
-    $ git-mirror --help
-    ...
+For more info, check the --help output.
