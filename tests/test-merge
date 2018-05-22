@@ -1,0 +1,73 @@
+#! /bin/sh
+
+. "$(dirname "$0")/test-lib.sh"
+test_start
+
+repos_ff_ready
+
+assert_log_length fork.git master 1
+assert_log_length fork.git new_branch 2
+
+git clone fork.git fork_sources
+(
+    cd fork_sources
+    our_git branch ci master
+    our_git push --all --set-upstream origin
+)
+
+git-mirror \
+    --source "$(pwd)/origin.git" \
+    --destination "$(pwd)/fork.git" \
+    --cache-dir "$(pwd)/cache" \
+    --branch master \
+    --branch new_branch \
+    --branch master:ci:merge
+
+assert_log_length fork.git ci 2
+
+(
+    cd fork_sources || exit 1
+    our_git checkout ci
+    git pull
+    touch .travis.yml
+    our_git add .travis.yml
+    our_git commit -m "add travis.yml"
+    our_git push origin ci
+)
+
+(
+    cd source || exit 1
+    our_git checkout master
+    touch something_else
+    our_git add something_else
+    our_git commit -m "something else"
+    our_git push origin master
+)
+
+git-mirror \
+    --source "$(pwd)/origin.git" \
+    --destination "$(pwd)/fork.git" \
+    --cache-dir "$(pwd)/cache" \
+    --branch master:ci:merge
+
+(
+    cd source || exit 1
+    our_git checkout master
+    echo huh >> something_else
+    our_git add something_else
+    our_git commit -m "check user"
+    our_git push origin master
+)
+
+git-mirror \
+    --user-name 'A B' \
+    --user-mail 'A@B.C' \
+    --source "$(pwd)/origin.git" \
+    --destination "$(pwd)/fork.git" \
+    --cache-dir "$(pwd)/cache" \
+    --branch master \
+    --branch master:ci:merge
+
+assert_log_length fork.git master 4
+assert_log_length fork.git ci 7
+

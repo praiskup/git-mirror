@@ -1,0 +1,48 @@
+#! /bin/sh
+
+. "$(dirname "$0")/test-lib.sh"
+test_start
+
+repos_ff_ready
+
+assert_log_length fork.git master 1
+assert_log_length fork.git new_branch 2
+
+git-mirror \
+    --source "$(pwd)/origin.git" \
+    --destination "$(pwd)/fork.git" \
+    --cache-dir "$(pwd)/cache" \
+    --branch master \
+    --branch new_branch
+
+assert_log_length fork.git master 2
+assert_log_length fork.git new_branch 3
+
+git-mirror \
+    --source "$(pwd)/origin.git" \
+    --destination "$(pwd)/fork.git" \
+    --cache-dir "$(pwd)/cache" \
+    --branch master \
+    --branch new_branch
+
+assert_log_length fork.git master 2
+assert_log_length fork.git new_branch 3
+
+(
+    cd source
+    our_git checkout master
+    touch file
+    our_git add file
+    our_git commit -m "third commit"
+    our_git push --all
+)
+
+git-mirror \
+    --source "$(pwd)/origin.git" \
+    --destination "$(pwd)/fork.git" \
+    --cache-dir "$(pwd)/cache" \
+    --branch master \
+    --branch new_branch
+
+assert_log_length fork.git master 3
+assert_log_length fork.git new_branch 3
