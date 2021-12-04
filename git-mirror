@@ -25,7 +25,7 @@ Options:
   --destination URL     destination (read-write) git clone url
   --branch SRC[:DEST[:OPTS]]   sync branch named SRC from --source repo into
                         --destination repo, but change its name to DEST.
-                        Optional argument (by default master:master) is used,
+                        Optional argument (by default main:main) is used,
                         and multiple --branch options are allowed.  Implemented
                         OPTS (colon separated) are 'merge' -- sync with merge
                         commit is acceptable.
@@ -113,7 +113,7 @@ done
 $script_fail && die "missing arguments"
 
 if test ${#opt_branch[@]} -eq 0; then
-    opt_branch=(master)
+    opt_branch=(main)
 fi
 
 for branch in "${opt_branch[@]}"; do
