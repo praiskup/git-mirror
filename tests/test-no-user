@@ -21,7 +21,7 @@ git-mirror \
     --source "$(pwd)/origin.git" \
     --destination "$(pwd)/fork.git" \
     --cache-dir "$(pwd)/cache" \
-    --branch master \
+    --branch main \
     --branch new_branch 2>&1 | grep 'no global user.name'
 )
 
@@ -29,7 +29,7 @@ git-mirror \
     --source "$(pwd)/origin.git" \
     --destination "$(pwd)/fork.git" \
     --cache-dir "$(pwd)/cache" \
-    --branch master \
+    --branch main \
     --branch new_branch \
     --user-name 'John Doe' \
     --user-mail 'john@doe.org'

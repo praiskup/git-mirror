@@ -37,11 +37,11 @@ repos_ff_ready ()
     (
         cd source || exit 1
 
-        our_git checkout master
+        our_git checkout main
 
         echo second commit >> README
         our_git add README
-        our_git commit -m "second master commit"
+        our_git commit -m "second main commit"
 
         our_git checkout new_branch
         echo third commit >> new_branch

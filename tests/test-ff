@@ -5,32 +5,32 @@ test_start
 
 repos_ff_ready
 
-assert_log_length fork.git master 1
+assert_log_length fork.git main 1
 assert_log_length fork.git new_branch 2
 
 git-mirror \
     --source "$(pwd)/origin.git" \
     --destination "$(pwd)/fork.git" \
     --cache-dir "$(pwd)/cache" \
-    --branch master \
+    --branch main \
     --branch new_branch
 
-assert_log_length fork.git master 2
+assert_log_length fork.git main 2
 assert_log_length fork.git new_branch 3
 
 git-mirror \
     --source "$(pwd)/origin.git" \
     --destination "$(pwd)/fork.git" \
     --cache-dir "$(pwd)/cache" \
-    --branch master \
+    --branch main \
     --branch new_branch
 
-assert_log_length fork.git master 2
+assert_log_length fork.git main 2
 assert_log_length fork.git new_branch 3
 
 (
     cd source
-    our_git checkout master
+    our_git checkout main
     touch file
     our_git add file
     our_git commit -m "third commit"
@@ -41,8 +41,8 @@ git-mirror \
     --source "$(pwd)/origin.git" \
     --destination "$(pwd)/fork.git" \
     --cache-dir "$(pwd)/cache" \
-    --branch master \
+    --branch main \
     --branch new_branch
 
-assert_log_length fork.git master 3
+assert_log_length fork.git main 3
 assert_log_length fork.git new_branch 3

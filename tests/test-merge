@@ -5,13 +5,13 @@ test_start
 
 repos_ff_ready
 
-assert_log_length fork.git master 1
+assert_log_length fork.git main 1
 assert_log_length fork.git new_branch 2
 
 git clone fork.git fork_sources
 (
     cd fork_sources
-    our_git branch ci master
+    our_git branch ci main
     our_git push --all --set-upstream origin
 )
 
@@ -19,9 +19,9 @@ git-mirror \
     --source "$(pwd)/origin.git" \
     --destination "$(pwd)/fork.git" \
     --cache-dir "$(pwd)/cache" \
-    --branch master \
+    --branch main \
     --branch new_branch \
-    --branch master:ci:merge
+    --branch main:ci:merge
 
 assert_log_length fork.git ci 2
 
@@ -37,26 +37,26 @@ assert_log_length fork.git ci 2
 
 (
     cd source || exit 1
-    our_git checkout master
+    our_git checkout main
     touch something_else
     our_git add something_else
     our_git commit -m "something else"
-    our_git push origin master
+    our_git push origin main
 )
 
 git-mirror \
     --source "$(pwd)/origin.git" \
     --destination "$(pwd)/fork.git" \
     --cache-dir "$(pwd)/cache" \
-    --branch master:ci:merge
+    --branch main:ci:merge
 
 (
     cd source || exit 1
-    our_git checkout master
+    our_git checkout main
     echo huh >> something_else
     our_git add something_else
     our_git commit -m "check user"
-    our_git push origin master
+    our_git push origin main
 )
 
 git-mirror \
@@ -65,9 +65,9 @@ git-mirror \
     --source "$(pwd)/origin.git" \
     --destination "$(pwd)/fork.git" \
     --cache-dir "$(pwd)/cache" \
-    --branch master \
-    --branch master:ci:merge
+    --branch main \
+    --branch main:ci:merge
 
-assert_log_length fork.git master 4
+assert_log_length fork.git main 4
 assert_log_length fork.git ci 7
 

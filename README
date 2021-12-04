@@ -5,7 +5,7 @@ Trivial script to sync branches from one remote git repo into another;  with
 intermediary cache directory (recycled for subsequent, e.g. cron, runs).
 
 For example, consider you want to synchronize 'source.git' repo with
-'destination.git'; and you want to sync 'master' -> 'master' and 'master' ->
+'destination.git'; and you want to sync 'main' -> 'main' and 'main' ->
 'ci', while the 'destination.git:ci' branch has some more commits -- not tracked
 in 'source.git:ci'.  Then you would do:
 
@@ -13,8 +13,8 @@ in 'source.git:ci'.  Then you would do:
         --source https://example.com/source.git \
         --destination git@example.com:destination.git \
         --cache-dir /tmp/cache-directory \
-        --branch master \
-        --branch master:ci:merge
+        --branch main \
+        --branch main:ci:merge
 
 Obviously, the 'destination.git:ci' will either contain "merge commits", or the
 synchronization fails if the 'ci' branches collide.
