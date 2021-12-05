@@ -7,7 +7,7 @@ our_git ()
 
 repo_simple ()
 {
-    our_git init --bare origin.git
+    our_git init --bare origin.git -b main
     our_git clone origin.git source
 
     (

@@ -3,11 +3,12 @@
 
 user_name="$(git config --global user.name)"
 case $user_name in
-    Travis\ *|"")
+    Travis\ *|GitHub\ Actions|"")
         git config --global --unset user.name
         git config --global --unset user.email
         ;;
     *)
+        echo >&2 "Can not work with '$user_name'."
         exit 77 ;;
 esac
 

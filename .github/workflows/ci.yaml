@@ -1,0 +1,22 @@
+---
+name: make check
+
+on:
+  push:
+    branches: main
+  pull_request:
+    branches: main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out proper version of sources
+        uses: actions/checkout@v1
+
+      - name: "run the 'make check' testsuite"
+        run: |
+          set -ex
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "ghactions@example.com"
+          make check
