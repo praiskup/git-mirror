@@ -85,5 +85,5 @@ assert_log_length ()
 (
     cd "$1" || exit 1
     count=$(git log --format="%h" "$2" | wc -l)
-    test $count -eq $3 || exit 1
+    test "$count" -eq "$3" || exit 1
 )
